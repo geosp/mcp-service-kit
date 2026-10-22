@@ -26,6 +26,9 @@ Issues = "https://github.com/geosp/mcp-service-kit/issues"
 redis = [
     "py-key-value-aio[redis]>=0.4.6",
 ]
+
+[dependency-groups]
+# Development tools: installed by `uv sync` / `uv run` by default, never published as an extra
 dev = [
     "pytest>=9.1",
     "pytest-asyncio>=1.4",

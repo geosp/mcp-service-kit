@@ -46,7 +46,7 @@ tests/
    - Namespace defaults to `"mcp-cache"`.
    - Change the cache log line to say "operating without caching".
    - Raise a clear `ImportError` that mentions `pip install mcp-service-kit[redis]` when aiocache is missing.
-10. **Dependencies.** Floors are the versions we test against (see step 15). Base: `fastmcp>=4.1.3`, `pydantic>=2.14`, `pydantic-settings>=2.16`, `python-dotenv>=1.2`. Extra `[redis]`: `py-key-value-aio[redis]>=0.4.6`. Extra `[dev]`: `pytest>=9.1`, `pytest-asyncio>=1.4`, `ruff>=0.17`.
+10. **Dependencies.** Floors are the versions we test against (see step 15). Base: `fastmcp>=4.1.3`, `pydantic>=2.14`, `pydantic-settings>=2.16`, `python-dotenv>=1.2`. Extra `[redis]`: `py-key-value-aio[redis]>=0.4.6`. Dev tools are a `[dependency-groups] dev` group (PEP 735), not a published extra: `pytest>=9.1`, `pytest-asyncio>=1.4`, `ruff>=0.17`.
 11. **Docs.** Write a README with a quickstart: subclass `BaseService`, write `create_main_with_modes(...)`, run it with `--mode stdio` or `--mode http`. Include an auth example that overrides `create_auth_provider()` with a FastMCP `JWTVerifier`. Fix the docstrings that mention weather or `core.server` (for example `server.py:5` and `server.py:661`). Delete `src/mcp_service_kit/README.md`.
 12. **Port the example.** In `examples/translation/`:
     - Delete every `features/*/routes.py`. In `server.py`, remove the importlib route discovery, the FastAPI imports and exception handlers, `allowed_cors_origins` and the Authentik-based `create_auth_provider` override.

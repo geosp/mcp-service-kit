@@ -726,13 +726,15 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+redis = [
+    { name = "py-key-value-aio", extra = ["redis"] },
+]
+
+[package.dev-dependencies]
 dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
-]
-redis = [
-    { name = "py-key-value-aio", extra = ["redis"] },
 ]
 
 [package.metadata]
@@ -741,12 +743,16 @@ requires-dist = [
     { name = "py-key-value-aio", extras = ["redis"], marker = "extra == 'redis'", specifier = ">=0.4.6" },
     { name = "pydantic", specifier = ">=2.14" },
     { name = "pydantic-settings", specifier = ">=2.16" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.1" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.4" },
     { name = "python-dotenv", specifier = ">=1.2" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.17" },
 ]
-provides-extras = ["dev", "redis"]
+provides-extras = ["redis"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=9.1" },
+    { name = "pytest-asyncio", specifier = ">=1.4" },
+    { name = "ruff", specifier = ">=0.17" },
+]
 
 [[package]]
 name = "mcp-types"
