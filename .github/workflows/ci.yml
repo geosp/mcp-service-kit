@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # hatch-vcs derives the version from tags
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync --locked --all-extras
+      - run: uv run ruff check
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.14"]
+    services:
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_REDIS_PORT: "6379"  # enables the real-Redis round-trip test
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync --locked --all-extras --python ${{ matrix.python }}
+      - run: uv run pytest
+
+  min-deps:
+    # Tests against the lowest versions pyproject.toml allows, on the oldest supported Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync --all-extras --python 3.11 --resolution lowest-direct
+      - run: uv run --no-sync pytest
+
+  package:
+    # The built wheel must import without the [redis] extra
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10
+      - run: uv build
+      - name: Import the wheel in a clean venv
+        run: |
+          uv venv /tmp/wheel-venv
+          uv pip install --python /tmp/wheel-venv/bin/python dist/*.whl
+          /tmp/wheel-venv/bin/python - <<'EOF'
+          import mcp_service_kit
+          print("mcp_service_kit", mcp_service_kit.__version__)
+          try:
+              import mcp_service_kit.cache
+          except ImportError as e:
+              assert "mcp-service-kit[redis]" in str(e), e
+          else:
+              raise SystemExit("mcp_service_kit.cache imported without the [redis] extra")
+          EOF

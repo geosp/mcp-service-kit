@@ -7,6 +7,7 @@ simple strings that can be interpolated into tool docstrings using f-strings.
 
 from pathlib import Path
 
+
 def load_instruction(filename: str, module_path: str = None) -> str:
     """
     Load instruction markdown file and return as string

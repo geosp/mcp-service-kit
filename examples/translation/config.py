@@ -1,30 +1,29 @@
 """
 Configuration management for Translation MCP Server
 
-Shows how to extend core configuration classes for your service.
+Shows how to combine mcp-service-kit configuration classes with your own.
+Each section reads its own environment variables when instantiated.
 """
 
-import os
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from typing import Annotated
 
-from core.config import (
-    AuthentikConfig,
-    BaseServerConfig,
-    RedisCacheConfig,
-    load_dotenv
-)
+from pydantic import BaseModel, Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-# Ensure environment variables are loaded
-load_dotenv()
+from mcp_service_kit import BaseServerConfig, RedisCacheConfig
 
 
-class TranslationAPIConfig(BaseModel):
+class TranslationAPIConfig(BaseSettings):
     """
     Configuration for translation API
 
-    This shows how to add service-specific configuration
+    This shows how to add service-specific configuration. Environment
+    variables: TRANSLATION_API_KEY, TRANSLATION_API_URL,
+    TRANSLATION_DEFAULT_SOURCE_LANG, TRANSLATION_SUPPORTED_LANGUAGES
+    (comma-separated).
     """
+    model_config = SettingsConfigDict(env_prefix="TRANSLATION_", extra="ignore")
+
     api_key: str = Field(
         default="demo-key",
         description="Translation API key"
@@ -37,98 +36,26 @@ class TranslationAPIConfig(BaseModel):
         default="auto",
         description="Default source language (auto-detect)"
     )
-    supported_languages: List[str] = Field(
+    supported_languages: Annotated[list[str], NoDecode] = Field(
         default=["en", "es", "fr", "de", "it", "pt", "ja", "zh", "ko", "ru"],
         description="List of supported language codes"
     )
 
+    @field_validator("supported_languages", mode="before")
     @classmethod
-    def from_env(cls) -> "TranslationAPIConfig":
-        """Load translation API config from environment variables"""
-        api_key = os.getenv("TRANSLATION_API_KEY", "demo-key")
-        api_url = os.getenv("TRANSLATION_API_URL", cls.model_fields["api_url"].default)
-        default_source = os.getenv("TRANSLATION_DEFAULT_SOURCE", "auto")
-
-        # Parse supported languages from comma-separated string
-        supported_str = os.getenv("TRANSLATION_SUPPORTED_LANGUAGES", "")
-        supported = [lang.strip() for lang in supported_str.split(",")] if supported_str else cls.model_fields["supported_languages"].default
-
-        return cls(
-            api_key=api_key,
-            api_url=api_url,
-            default_source_lang=default_source,
-            supported_languages=supported
-        )
-
-
-class ServerConfig(BaseServerConfig):
-    """
-    Server configuration for Translation MCP
-
-    Extends BaseServerConfig with translation-specific settings
-    """
-    cors_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8080"],
-        description="List of allowed origins for CORS"
-    )
-
-    @classmethod
-    def from_env(cls) -> "ServerConfig":
-        """Load server configuration from environment variables"""
-        config = super().from_env(env_prefix="MCP_")
-
-        # Parse CORS origins
-        cors_str = os.getenv("MCP_CORS_ORIGINS", "http://localhost:3000,http://localhost:8080")
-        config.cors_origins = [origin.strip() for origin in cors_str.split(",")]
-
-        return config
+    def _split_languages(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [lang.strip() for lang in value.split(",") if lang.strip()]
+        return value
 
 
 class AppConfig(BaseModel):
     """
     Complete application configuration
 
-    Aggregates all configuration sections into a single object.
+    Aggregates all configuration sections into a single object. The server
+    section is passed to the server; the rest go to the service.
     """
-    server: ServerConfig
-    redis_cache: RedisCacheConfig
-    translation_api: TranslationAPIConfig
-    authentik: Optional[AuthentikConfig] = None
-
-    @classmethod
-    def from_env(cls) -> "AppConfig":
-        """Load complete configuration from environment variables"""
-        server = ServerConfig.from_env()
-        redis_cache = RedisCacheConfig.from_env(env_prefix="MCP_")
-        translation_api = TranslationAPIConfig.from_env()
-
-        # Only load Authentik config if using HTTP transport with auth enabled
-        authentik = None
-        if server.transport == "http" and server.auth_enabled:
-            authentik = AuthentikConfig.from_env_optional()
-
-        return cls(
-            server=server,
-            redis_cache=redis_cache,
-            translation_api=translation_api,
-            authentik=authentik
-        )
-
-
-# Global configuration instance
-_config: Optional[AppConfig] = None
-
-
-def get_config() -> AppConfig:
-    """Get global application configuration"""
-    global _config
-    if _config is None:
-        _config = AppConfig.from_env()
-    return _config
-
-
-def load_config() -> AppConfig:
-    """Load application configuration from environment"""
-    global _config
-    _config = AppConfig.from_env()
-    return _config
+    server: BaseServerConfig = Field(default_factory=BaseServerConfig)
+    redis_cache: RedisCacheConfig = Field(default_factory=RedisCacheConfig)
+    translation_api: TranslationAPIConfig = Field(default_factory=TranslationAPIConfig)

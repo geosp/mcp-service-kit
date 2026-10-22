@@ -4,15 +4,16 @@ MCP Service wrapper for translation functionality
 This demonstrates automatic feature discovery and registration pattern.
 """
 
-import logging
 import importlib
+import logging
 import pkgutil
 from pathlib import Path
 
-from core.server import BaseService
 from fastmcp import FastMCP
 
-from mcp_translation.translation_service import TranslationService
+from mcp_service_kit import BaseService
+
+from .translation_service import TranslationService
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class TranslationMCPService(BaseService):
         logger.info("Discovering and registering MCP tools from features...")
 
         # Get the features package path
-        features_package = "mcp_translation.features"
+        features_package = f"{__package__}.features"
         features_path = Path(__file__).parent / "features"
 
         if not features_path.exists():

@@ -5,11 +5,13 @@ This demonstrates how to implement your core business logic
 separately from MCP/REST concerns.
 """
 
+import hashlib
 import logging
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
-from core.cache import RedisCacheClient
-from mcp_translation.config import TranslationAPIConfig
+from key_value.aio.protocols import AsyncKeyValue
+
+from .config import TranslationAPIConfig
 
 logger = logging.getLogger(__name__)
 
@@ -22,16 +24,16 @@ class TranslationService:
     MCP or REST APIs, just pure translation functionality.
     """
 
-    def __init__(self, api_config: TranslationAPIConfig, cache_client: RedisCacheClient):
+    def __init__(self, api_config: TranslationAPIConfig, cache: AsyncKeyValue):
         """
         Initialize translation service
 
         Args:
             api_config: Translation API configuration
-            cache_client: Redis cache client for caching translations
+            cache: Key-value store for caching translations
         """
         self.api_config = api_config
-        self.cache_client = cache_client
+        self.cache = cache
 
         logger.info(f"Initialized TranslationService with API: {api_config.api_url}")
         logger.info(f"Supported languages: {', '.join(api_config.supported_languages)}")
@@ -70,8 +72,10 @@ class TranslationService:
         logger.info(f"Translating text to {target_language}: {text[:50]}...")
 
         # Check cache first
-        cache_key = f"{source_language}:{target_language}:{text}"
-        cached_result = await self.cache_client.get(cache_key)
+        cache_key = hashlib.sha256(
+            f"{source_language}:{target_language}:{text}".encode()
+        ).hexdigest()
+        cached_result = await self.cache.get(cache_key, collection="translations")
 
         if cached_result:
             logger.info("Using cached translation")
@@ -90,7 +94,7 @@ class TranslationService:
         }
 
         # Cache the result for 24 hours
-        await self.cache_client.set(cache_key, result, ttl=86400)
+        await self.cache.put(cache_key, result, collection="translations", ttl=86400)
 
         logger.info(f"Translation completed: {target_language}")
         return result

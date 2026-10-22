@@ -5,12 +5,12 @@ Provides the translate_text tool for AI assistants.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastmcp import FastMCP
 
-from mcp_translation.translation_service import TranslationService
-from mcp_translation.features.translate.models import TranslateRequest, TranslateResponse
+from ...translation_service import TranslationService
+from .models import TranslateRequest
 
 logger = logging.getLogger(__name__)
 

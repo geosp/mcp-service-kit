@@ -3,6 +3,7 @@ Data models for supported languages feature
 """
 
 from typing import List
+
 from pydantic import BaseModel, Field
 
 

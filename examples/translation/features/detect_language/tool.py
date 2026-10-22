@@ -5,12 +5,12 @@ Provides the detect_language tool for AI assistants.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastmcp import FastMCP
 
-from mcp_translation.translation_service import TranslationService
-from mcp_translation.features.detect_language.models import DetectLanguageRequest
+from ...translation_service import TranslationService
+from .models import DetectLanguageRequest
 
 logger = logging.getLogger(__name__)
 

@@ -11,8 +11,8 @@ Usage:
     def my_func(...):
         ...
 """
-from functools import wraps
 from typing import Callable, Union
+
 
 def inject_docstring(doc: Union[str, Callable[[], str]]):
     """

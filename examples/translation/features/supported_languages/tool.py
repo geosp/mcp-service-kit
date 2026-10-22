@@ -5,11 +5,11 @@ Provides the get_supported_languages tool for AI assistants.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastmcp import FastMCP
 
-from mcp_translation.translation_service import TranslationService
+from ...translation_service import TranslationService
 
 logger = logging.getLogger(__name__)
 

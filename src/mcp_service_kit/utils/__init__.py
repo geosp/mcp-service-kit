@@ -2,7 +2,7 @@
 Core utilities for docstring injection and instruction loading.
 
 This package provides utilities for dynamic docstring manipulation and
-instruction file loading used throughout the MCP Weather service.
+instruction file loading for MCP tool definitions.
 """
 
 from .docstring_injector import inject_docstring
