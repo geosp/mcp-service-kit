@@ -20,19 +20,19 @@ The package isn't on PyPI yet. Install a tagged release straight from GitHub
 
 ```bash
 # core
-pip install "mcp-service-kit @ git+https://github.com/geosp/mcp-service-kit@v0.2.0"
+pip install "mcp-service-kit @ git+https://github.com/geosp/mcp-service-kit@v0.2.1"
 # with create_redis_store()
-pip install "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit@v0.2.0"
+pip install "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit@v0.2.1"
 
 # with uv (records the exact commit in uv.lock)
-uv add "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit" --tag v0.2.0
+uv add "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit" --tag v0.2.1
 ```
 
 To depend on it from another project, pin the tag in `pyproject.toml`:
 
 ```toml
 dependencies = [
-    "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit@v0.2.0",
+    "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit@v0.2.1",
 ]
 ```
 
@@ -117,6 +117,9 @@ precedence over `.env`. Pass `_env_prefix="APP_"` to read a different prefix.
 | `MCP_HOST`         | `--host`    | `0.0.0.0` |
 | `MCP_PORT`         | `--port`    | `3000`    |
 | `MCP_AUTH_ENABLED` | `--no-auth` | `true`    |
+
+A flag that isn't passed leaves its variable alone, so you can set everything, including the
+transport, through the environment alone, for example in a container's `env:` section.
 
 Logs go to stderr so they never mix with the stdio protocol stream.
 

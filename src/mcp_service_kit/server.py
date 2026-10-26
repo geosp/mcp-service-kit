@@ -347,6 +347,7 @@ def create_standard_cli_parser(
         >>> parser = create_standard_cli_parser("my-service", "My MCP Service")
         >>> args = parser.parse_args()
         >>> # Use args.mode, args.host, args.port, args.no_auth, args.log_level
+        >>> # (mode, host and port are None when not given on the command line)
     """
     if description is None:
         description = f"{service_name} - MCP Server"
@@ -356,27 +357,27 @@ def create_standard_cli_parser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 Examples:
-  {service_name}                          # Run with stdio transport (default)
+  {service_name}                          # stdio, unless MCP_TRANSPORT says otherwise
   {service_name} --mode stdio             # Run with stdio transport
   {service_name} --mode http --port 3000  # Serve MCP over HTTP at :3000/mcp
 
 Standard Environment Variables:
-  MCP_TRANSPORT         Transport mode: stdio or http
+  MCP_TRANSPORT         Transport mode: stdio or http (default: stdio)
   MCP_HOST              Host to bind to for HTTP mode (default: 0.0.0.0)
   MCP_PORT              Port to bind to for HTTP mode (default: 3000)
   MCP_AUTH_ENABLED      Use the server's auth provider in HTTP mode (default: true)
         """
     )
 
+    # Mode, host and port default to None so that MCP_TRANSPORT / MCP_HOST /
+    # MCP_PORT from the environment are only overridden when given explicitly.
     parser.add_argument(
         "--mode",
         choices=list(TRANSPORTS),
-        default="stdio",
-        help="Transport: stdio (default) or http"
+        default=None,
+        help="Transport: stdio or http (default: MCP_TRANSPORT, else stdio)"
     )
 
-    # Host and port default to None so that MCP_HOST / MCP_PORT from the
-    # environment are only overridden when given explicitly.
     parser.add_argument(
         "--host",
         default=None,
@@ -416,8 +417,8 @@ def apply_cli_args_to_environment(args: argparse.Namespace) -> None:
     Args:
         args: Parsed arguments from create_standard_cli_parser()
     """
-    os.environ["MCP_TRANSPORT"] = args.mode
-
+    if args.mode is not None:
+        os.environ["MCP_TRANSPORT"] = args.mode
     if args.host is not None:
         os.environ["MCP_HOST"] = args.host
     if args.port is not None:

@@ -2,7 +2,11 @@ import os
 
 import pytest
 
-from mcp_service_kit import apply_cli_args_to_environment, create_standard_cli_parser
+from mcp_service_kit import (
+    BaseServerConfig,
+    apply_cli_args_to_environment,
+    create_standard_cli_parser,
+)
 
 
 def apply(*argv):
@@ -12,8 +16,9 @@ def apply(*argv):
 
 def test_default_is_stdio():
     apply()
-    assert os.environ["MCP_TRANSPORT"] == "stdio"
+    assert BaseServerConfig().transport == "stdio"
     assert os.environ["LOG_LEVEL"] == "INFO"
+    assert "MCP_TRANSPORT" not in os.environ
     assert "MCP_HOST" not in os.environ
     assert "MCP_PORT" not in os.environ
     assert "MCP_AUTH_ENABLED" not in os.environ
@@ -33,6 +38,18 @@ def test_unset_host_keeps_environment(monkeypatch):
     monkeypatch.setenv("MCP_HOST", "10.0.0.1")
     apply("--mode", "http")
     assert os.environ["MCP_HOST"] == "10.0.0.1"
+
+
+def test_transport_from_environment(monkeypatch):
+    monkeypatch.setenv("MCP_TRANSPORT", "http")
+    apply()
+    assert BaseServerConfig().transport == "http"
+
+
+def test_mode_flag_overrides_environment(monkeypatch):
+    monkeypatch.setenv("MCP_TRANSPORT", "http")
+    apply("--mode", "stdio")
+    assert BaseServerConfig().transport == "stdio"
 
 
 def test_no_mcp_only_variable():

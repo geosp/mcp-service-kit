@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.1
+
+### Fixed
+
+- `MCP_TRANSPORT` now selects the transport when `--mode` isn't passed, as the README
+  documents. Before, the CLI's `--mode` default (`stdio`) always overwrote it. `--mode`
+  still takes precedence, and the default is still stdio when neither is set. If
+  `MCP_TRANSPORT=http` is set in the environment or a `.env` file, a launch without
+  `--mode` now starts HTTP; pass `--mode stdio` to force stdio.
+
 ## 0.2.0
 
 ### Breaking
