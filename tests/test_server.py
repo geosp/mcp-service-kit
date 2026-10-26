@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urlsplit
 
 import httpx2
@@ -56,13 +57,30 @@ def test_auth_hook_only_for_http_with_auth(transport, auth_enabled, expect_auth)
         assert mcp.auth is None
 
 
-def test_http_without_provider_warns(caplog):
-    make_server(transport="http").create_mcp_app()
-    assert "without authentication" in caplog.text
+def test_http_without_provider_refuses_to_start():
+    with pytest.raises(ValueError, match="--no-auth"):
+        make_server(transport="http").create_mcp_app()
+
+
+def test_no_auth_logs_one_warning(caplog):
+    make_server(transport="http", auth_enabled=False).create_mcp_app()
+    warnings = [
+        r for r in caplog.records
+        if r.name == "mcp_service_kit.server" and r.levelno == logging.WARNING
+    ]
+    assert len(warnings) == 1
+    assert "--no-auth" in warnings[0].getMessage()
+
+
+def test_run_exits_on_missing_provider(caplog):
+    with pytest.raises(SystemExit) as exc_info:
+        make_server(transport="http").run()
+    assert exc_info.value.code == 1
+    assert "Configuration error" in caplog.text
 
 
 def test_create_asgi_app():
-    app = make_server(transport="http").create_asgi_app()
+    app = make_server(transport="http", auth_enabled=False).create_asgi_app()
     assert callable(app)
 
 

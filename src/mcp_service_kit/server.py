@@ -161,7 +161,9 @@ class BaseMCPServer(abc.ABC):
         transport is HTTP and ``auth_enabled`` is true.
 
         Returns:
-            A FastMCP auth provider, or None to serve without authentication
+            A FastMCP auth provider. Returning None (the default) makes the
+            HTTP server refuse to start; use ``--no-auth`` to serve without
+            authentication.
         """
         return None
 
@@ -171,6 +173,10 @@ class BaseMCPServer(abc.ABC):
 
         Returns:
             Configured FastMCP application with tools registered
+
+        Raises:
+            ValueError: If the transport is HTTP, auth is enabled and
+                create_auth_provider() returns None
         """
         auth_provider = None
 
@@ -178,15 +184,17 @@ class BaseMCPServer(abc.ABC):
             if self.config.auth_enabled:
                 auth_provider = self.create_auth_provider()
                 if auth_provider is None:
-                    logger.warning(
-                        "HTTP transport is running without authentication: "
-                        "create_auth_provider() returned None"
+                    raise ValueError(
+                        "HTTP transport has auth enabled, but create_auth_provider() "
+                        "returned None. Return an AuthProvider, or pass --no-auth "
+                        "(MCP_AUTH_ENABLED=false) to serve without authentication."
                     )
-                else:
-                    logger.info("Authentication is enabled for HTTP transport")
+                logger.info("Authentication is enabled for HTTP transport")
             else:
-                logger.warning("Authentication is DISABLED for HTTP transport (auth_enabled=false)")
-                logger.warning("This is not recommended for production environments")
+                logger.warning(
+                    "Authentication is disabled for HTTP transport (--no-auth): "
+                    "anyone who can reach the port can call every tool"
+                )
 
         # Create MCP app
         mcp = FastMCP(
@@ -226,6 +234,11 @@ class BaseMCPServer(abc.ABC):
 
         Returns:
             Starlette ASGI application from FastMCP
+
+        Raises:
+            ValueError: If the configuration is invalid, including when auth
+                is enabled and create_auth_provider() returns None. Unlike
+                run(), this method lets the error propagate.
         """
         self.validate_configuration()
         self.service.initialize()
