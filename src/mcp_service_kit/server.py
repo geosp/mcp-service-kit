@@ -13,6 +13,7 @@ import os
 import sys
 from typing import Any, Callable, Optional, Type, TypeVar
 
+import fastmcp
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 from fastmcp.server.auth import AuthProvider
@@ -219,8 +220,9 @@ class BaseMCPServer(abc.ABC):
         Create an ASGI application serving MCP over HTTP
 
         Use this to run the server under uvicorn or gunicorn instead of
-        calling run(). MCP is served at ``/mcp/``. Note that service.cleanup()
-        is not called automatically in this mode.
+        calling run(). MCP is served at FastMCP's streamable HTTP path,
+        ``/mcp`` by default. Note that service.cleanup() is not called
+        automatically in this mode.
 
         Returns:
             Starlette ASGI application from FastMCP
@@ -229,6 +231,19 @@ class BaseMCPServer(abc.ABC):
         self.service.initialize()
         self._mcp_app = self.create_mcp_app()
         return self._mcp_app.http_app()
+
+    def http_endpoint_url(self) -> str:
+        """
+        Get the URL of the MCP endpoint for HTTP transport
+
+        Returns:
+            URL built from the configured host and port and FastMCP's
+            streamable HTTP path (``/mcp`` by default)
+        """
+        return (
+            f"http://{self.config.host}:{self.config.port}"
+            f"{fastmcp.settings.streamable_http_path}"
+        )
 
     def run_stdio_transport(self) -> None:
         """
@@ -245,7 +260,7 @@ class BaseMCPServer(abc.ABC):
         port = self.config.port
 
         logger.info(f"Starting {self.service_title} with HTTP transport")
-        logger.info(f"MCP endpoint: http://{host}:{port}/mcp/")
+        logger.info(f"MCP endpoint: {self.http_endpoint_url()}")
 
         self._mcp_app.run(
             transport="http",
@@ -330,7 +345,7 @@ def create_standard_cli_parser(
 Examples:
   {service_name}                          # Run with stdio transport (default)
   {service_name} --mode stdio             # Run with stdio transport
-  {service_name} --mode http --port 3000  # Serve MCP over HTTP at :3000/mcp/
+  {service_name} --mode http --port 3000  # Serve MCP over HTTP at :3000/mcp
 
 Standard Environment Variables:
   MCP_TRANSPORT         Transport mode: stdio or http

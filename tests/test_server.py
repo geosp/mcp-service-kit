@@ -1,3 +1,6 @@
+from urllib.parse import urlsplit
+
+import httpx2
 import pytest
 from fastmcp import Client
 from fastmcp.server.auth import JWTVerifier
@@ -61,6 +64,31 @@ def test_http_without_provider_warns(caplog):
 def test_create_asgi_app():
     app = make_server(transport="http").create_asgi_app()
     assert callable(app)
+
+
+async def test_http_endpoint_is_served():
+    server = make_server(transport="http", auth_enabled=False)
+    app = server.create_asgi_app()
+    path = urlsplit(server.http_endpoint_url()).path
+    initialize = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {"name": "test", "version": "0"},
+        },
+    }
+    async with app.router.lifespan_context(app):
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                path,
+                json=initialize,
+                headers={"accept": "application/json, text/event-stream"},
+            )
+    assert response.status_code == 200
 
 
 class ConfiguredServer(DummyServer):
