@@ -104,5 +104,5 @@ After the port, the libraries were checked for current versions and current reco
 - `uv run ruff check`
 - `grep -rniE "authentik|fastapi|weather|from core|mcp_translation|cors|aiocache" src/ examples/` returns nothing.
 - `uv run python -m examples.translation.server --mode stdio`, or its entry point, starts. Test it with `npx @modelcontextprotocol/inspector`.
-- `--mode http --port 3000` serves MCP at `http://localhost:3000/mcp/`.
+- `--mode http --port 3000` serves MCP at `http://localhost:3000/mcp`.
 - `uv build` produces a wheel. Install that wheel in a scratch venv and check that `import mcp_service_kit` works without the `[redis]` extra.

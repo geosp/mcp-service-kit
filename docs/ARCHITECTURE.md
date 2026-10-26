@@ -102,7 +102,7 @@ flowchart LR
     app["FastMCP(name, version,<br/>instructions, auth, middleware)"]
     svc["service.register_mcp_tools(mcp)"] --> app
     app --> stdio["run(transport='stdio')"]
-    app --> http["run(transport='http')<br/>serves /mcp/"]
+    app --> http["run(transport='http')<br/>serves /mcp"]
     app --> asgi["create_asgi_app()<br/>for uvicorn / gunicorn"]
 ```
 
@@ -121,8 +121,12 @@ flowchart TD
     en -- true --> hook["create_auth_provider()"]
     hook --> p{returned a provider?}
     p -- yes --> use[auth = provider]
-    p -- "no (default)" --> warn2[auth = None<br/>⚠ warn: no provider]
+    p -- "no (default)" --> refuse["refuse to start<br/>(ValueError: use --no-auth)"]
 ```
+
+HTTP fails closed. If auth is on but there's no provider, the server doesn't start, so it
+never serves its tools without auth by accident. Serving without auth has to be asked for
+with `--no-auth`.
 
 The hook is never called for stdio, so a provider that needs network access or secrets
 doesn't affect local runs.

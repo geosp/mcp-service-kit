@@ -20,25 +20,35 @@ The package isn't on PyPI yet. Install a tagged release straight from GitHub
 
 ```bash
 # core
-pip install "mcp-service-kit @ git+https://github.com/geosp/mcp-service-kit@v0.1.0"
+pip install "mcp-service-kit @ git+https://github.com/geosp/mcp-service-kit@v0.2.0"
 # with create_redis_store()
-pip install "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit@v0.1.0"
+pip install "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit@v0.2.0"
 
 # with uv (records the exact commit in uv.lock)
-uv add "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit" --tag v0.1.0
+uv add "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit" --tag v0.2.0
 ```
 
 To depend on it from another project, pin the tag in `pyproject.toml`:
 
 ```toml
 dependencies = [
-    "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit@v0.1.0",
+    "mcp-service-kit[redis] @ git+https://github.com/geosp/mcp-service-kit@v0.2.0",
 ]
 ```
 
 Each GitHub Release also has the built wheel attached, if you'd rather install a file.
 
 Requires Python 3.11+ and FastMCP 4.1+.
+
+### Upgrading from 0.1
+
+- HTTP servers whose `create_auth_provider()` returns `None` now refuse to start. Return
+  an auth provider, or add `--no-auth` (`MCP_AUTH_ENABLED=false`) to the HTTP launch
+  command to keep serving without auth.
+- The MCP endpoint is `/mcp`, with no trailing slash. The server always served `/mcp`; only
+  the logs and docs were wrong. Point clients and gateways at `/mcp` to avoid a 307 redirect.
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## Quickstart
 
@@ -81,9 +91,12 @@ if __name__ == "__main__":
 ```
 
 ```bash
-python my_server.py --mode stdio                # for local MCP clients
-python my_server.py --mode http --port 3000     # serves MCP at http://localhost:3000/mcp/
+python my_server.py --mode stdio                       # for local MCP clients
+python my_server.py --mode http --port 3000 --no-auth  # local use only: serves http://localhost:3000/mcp
 ```
+
+`GreetingServer` has no auth provider, so over HTTP it needs `--no-auth`. Without it the
+server refuses to start (see [Authentication](#authentication)).
 
 To debug interactively, run `npx @modelcontextprotocol/inspector` and point it at either transport.
 
@@ -145,7 +158,9 @@ class GreetingServer(BaseMCPServer):
 ```
 
 The hook runs only when the transport is `http` and `MCP_AUTH_ENABLED` is true.
-If it returns `None` (the default), the server logs a warning and serves without auth.
+If it returns `None` (the default), the HTTP server refuses to start: `run()` logs a
+configuration error and exits with code 1. To serve without auth, for example locally,
+pass `--no-auth` (`MCP_AUTH_ENABLED=false`). The server then logs one warning.
 
 ## Running under an ASGI server
 
@@ -156,7 +171,8 @@ gunicorn:
 # asgi.py
 from mcp_service_kit import BaseServerConfig
 
-config = BaseServerConfig(transport="http")
+# No auth provider, so auth must be off, or create_asgi_app() raises ValueError
+config = BaseServerConfig(transport="http", auth_enabled=False)
 app = GreetingServer(config, GreetingService()).create_asgi_app()
 ```
 

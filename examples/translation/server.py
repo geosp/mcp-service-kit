@@ -6,7 +6,7 @@ BaseMCPServer from mcp-service-kit.
 
 Run it with:
     python -m examples.translation.server --mode stdio
-    python -m examples.translation.server --mode http --port 3000
+    python -m examples.translation.server --mode http --port 3000 --no-auth
 """
 
 import logging
